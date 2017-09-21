@@ -1,25 +1,22 @@
-﻿
-/****************************** ghost1372.github.io ******************************\
+﻿/****************************** ghost1372.github.io ******************************\
 *	Module Name:	System_Details.cs
 *	Project:		MasterCry
 *	Copyright (C) 2017 Mahdi Hosseini, All rights reserved.
 *	This software may be modified and distributed under the terms of the MIT license.  See LICENSE file for details.
 *
 *	Written by Mahdi Hosseini <Mahdidvb72@gmail.com>,  2017, 9, 21, 02:45 ب.ظ
-*	
+*
 ***********************************************************************************/
 
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Management;
-using System.Text;
 
 namespace MasterCry
 {
-    class System_Details
+    internal class System_Details
     {
         private static void getAntivirus()
         {
@@ -92,6 +89,7 @@ namespace MasterCry
                 WriteText("AntiSpyWare: " + antiVirus.Name + "\t Path: " + antiVirus.Path);
             }
         }
+
         public static void getOperatingSystemInfo()
         {
             WriteText("OS Friendly Name: " + FriendlyName());
@@ -104,6 +102,7 @@ namespace MasterCry
             GetDotnetVersionFromRegistry();
             Get45or451FromRegistry();
         }
+
         private static string FriendlyName()
         {
             string ProductName = HKLM_GetString(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName");
@@ -115,6 +114,7 @@ namespace MasterCry
             }
             return "";
         }
+
         private static string HKLM_GetString(string path, string key)
         {
             try
@@ -125,9 +125,10 @@ namespace MasterCry
             }
             catch { return ""; }
         }
+
         private static void GetDotnetVersionFromRegistry()
         {
-            // Opens the registry key for the .NET Framework entry. 
+            // Opens the registry key for the .NET Framework entry.
             using (RegistryKey ndpKey =
                 RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, "").
                 OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\"))
@@ -136,19 +137,16 @@ namespace MasterCry
                 {
                     if (versionKeyName.StartsWith("v"))
                     {
-
                         RegistryKey versionKey = ndpKey.OpenSubKey(versionKeyName);
                         string name = (string)versionKey.GetValue("Version", "");
                         string sp = versionKey.GetValue("SP", "").ToString();
                         string install = versionKey.GetValue("Install", "").ToString();
                         if (install == "") //no install info, must be later.
                             WriteText("DotNetFramwok Version: " + versionKeyName + "\t" + name);
-
                         else
                         {
                             if (sp != "" && install == "1")
-                                 WriteText("DotNetFramwok Version: " + versionKeyName + "\t" + name + " SP" + sp);
-
+                                WriteText("DotNetFramwok Version: " + versionKeyName + "\t" + name + " SP" + sp);
                         }
                         if (name != "")
                             continue;
@@ -168,15 +166,13 @@ namespace MasterCry
                                     WriteText("DotNetFramwok Version: " + subKeyName + "\t" + name + " SP" + sp);
                                 else if (install == "1")
                                     WriteText("DotNetFramwok Version: " + subKeyName + "\t" + name);
-
                             }
-
                         }
-
                     }
                 }
             }
         }
+
         private static string CheckFor45DotVersion(int releaseKey)
         {
             if (releaseKey >= 393295)
@@ -199,6 +195,7 @@ namespace MasterCry
             // that 4.5 or later is installed.
             return "No 4.5 or later version detected";
         }
+
         private static void Get45or451FromRegistry()
         {
             using (RegistryKey ndpKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey("SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\"))
@@ -248,6 +245,7 @@ namespace MasterCry
                 Console.WriteLine("Error writing app settings");
             }
         }
+
         private static void WriteText(string Text)
         {
             using (System.IO.StreamWriter file =

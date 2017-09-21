@@ -1,22 +1,16 @@
-﻿
-/****************************** ghost1372.github.io ******************************\
+﻿/****************************** ghost1372.github.io ******************************\
 *	Module Name:	BuildVars.cs
 *	Project:		MasterCry
 *	Copyright (C) 2017 Mahdi Hosseini, All rights reserved.
 *	This software may be modified and distributed under the terms of the MIT license.  See LICENSE file for details.
 *
 *	Written by Mahdi Hosseini <Mahdidvb72@gmail.com>,  2017, 9, 21, 03:21 ب.ظ
-*	
+*
 ***********************************************************************************/
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MasterCry
 {
-    class BuildVars
+    internal class BuildVars
     {
         public static string Save_Location = "SysInfo.txt";
         public static string Save_Items_Location = "items.txt";
@@ -29,7 +23,6 @@ namespace MasterCry
         public static string Command_RESEND = "RESEND";
         public static string Command_SHUTDOWN = "SHUTDOWN";
 
-
         //Example Command =>    ###http://test.com###$$$VERSION$$$@@@COMMAND@@@
 
         public static string Exe_Name = "command.exe";
@@ -39,6 +32,5 @@ namespace MasterCry
         public static string FTP_SERVER = "";
         public static string FTP_USER = "";
         public static string FTP_PASS = "";
-
     }
 }

