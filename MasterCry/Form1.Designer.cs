@@ -34,7 +34,6 @@
             // 
             // tmrURLCheck
             // 
-            this.tmrURLCheck.Enabled = true;
             this.tmrURLCheck.Interval = 120000;
             this.tmrURLCheck.Tick += new System.EventHandler(this.tmrURLCheck_Tick);
             // 

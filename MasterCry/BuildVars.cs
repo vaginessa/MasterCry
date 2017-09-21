@@ -22,6 +22,7 @@ namespace MasterCry
         public static string Command_URL = "https://pastebin.com/raw/QF4BXM6D";
         public static string Command_URL_Symbol = "###";
         public static string Command_VER_Symbol = "$$$";
+        //Example Command =>    ###http://test.com###$$$VERSION$$$
 
         public static string Exe_Name = "command.exe";
         public static string Config_Command_Version = "CommandVersion";
