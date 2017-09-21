@@ -12,6 +12,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Management;
 using System.Text;
@@ -20,7 +21,6 @@ namespace MasterCry
 {
     class System_Details
     {
-        private static List<Members> sys = new List<Members>();
         private static void getAntivirus()
         {
             var antiVirusPreVista = new ManagementObjectSearcher(string.Format(@"\\{0}\root\SecurityCenter", Environment.MachineName), "SELECT * FROM AntivirusProduct");
@@ -79,34 +79,27 @@ namespace MasterCry
 
             foreach (var antiVirus in installedAntivirusses)
             {
-                sys.Add(new Members() { Name = antiVirus.Name.ToString(), Id = "AntiVirus", Path = antiVirus.Path.ToString() });
-
+                WriteText("AntiVirus: " + antiVirus.Name + "\t Path: " + antiVirus.Path);
             }
 
             foreach (var antiVirus in installedFireWall)
             {
-                sys.Add(new Members() { Name = antiVirus.Name.ToString(), Id = "FireWall", Path = antiVirus.Path.ToString() });
-
+                WriteText("FireWall: " + antiVirus.Name + "\t Path: " + antiVirus.Path);
             }
 
             foreach (var antiVirus in installedAntiSpyware)
             {
-                sys.Add(new Members() { Name = antiVirus.Name.ToString(), Id = "AntiSpyWare", Path = antiVirus.Path.ToString() });
-
-            }
-            //Todo: Fix write to File
-            foreach (Members info in sys)
-            {
-                Console.WriteLine(info);
+                WriteText("AntiSpyWare: " + antiVirus.Name + "\t Path: " + antiVirus.Path);
             }
         }
         public static void getOperatingSystemInfo()
         {
-            sys.Add(new Members() { Name = FriendlyName(), Id = "FriendlyName", Path = null });
-            sys.Add(new Members() { Name = Environment.UserName, Id = "UserName", Path = null });
-            sys.Add(new Members() { Name = Environment.UserDomainName, Id = "UserDomainName", Path = null });
-            sys.Add(new Members() { Name = Environment.OSVersion.ToString(), Id = "OSVersion", Path = null });
-            sys.Add(new Members() { Name = Environment.Is64BitOperatingSystem.ToString(), Id = "Is64Bit", Path = null });
+            WriteText("OS Friendly Name: " + FriendlyName());
+            WriteText("OS UserName: " + Environment.UserName);
+            WriteText("OS User Domain Name: " + Environment.UserDomainName);
+            WriteText("OS Version: " + Environment.OSVersion);
+            WriteText("OS Is 64Bit: " + Environment.Is64BitOperatingSystem);
+
             getAntivirus();
             GetDotnetVersionFromRegistry();
             Get45or451FromRegistry();
@@ -149,21 +142,17 @@ namespace MasterCry
                         string sp = versionKey.GetValue("SP", "").ToString();
                         string install = versionKey.GetValue("Install", "").ToString();
                         if (install == "") //no install info, must be later.
-                            sys.Add(new Members() { Name = name, Id = versionKeyName, Path = null });
+                            WriteText("DotNetFramwok Version: " + versionKeyName + "\t" + name);
 
                         else
                         {
                             if (sp != "" && install == "1")
-                            {
-                                sys.Add(new Members() { Name = name + "  SP" + sp, Id = versionKeyName, Path = null });
-
-                            }
+                                 WriteText("DotNetFramwok Version: " + versionKeyName + "\t" + name + " SP" + sp);
 
                         }
                         if (name != "")
-                        {
                             continue;
-                        }
+
                         foreach (string subKeyName in versionKey.GetSubKeyNames())
                         {
                             RegistryKey subKey = versionKey.OpenSubKey(subKeyName);
@@ -172,17 +161,13 @@ namespace MasterCry
                                 sp = subKey.GetValue("SP", "").ToString();
                             install = subKey.GetValue("Install", "").ToString();
                             if (install == "") //no install info, must be later.
-                                sys.Add(new Members() { Name = name, Id = versionKeyName, Path = null });
+                                WriteText("DotNetFramwok Version: " + versionKeyName + "\t" + name);
                             else
                             {
                                 if (sp != "" && install == "1")
-                                {
-                                    sys.Add(new Members() { Name = name + "  SP" + sp, Id = subKeyName, Path = null });
-                                }
+                                    WriteText("DotNetFramwok Version: " + subKeyName + "\t" + name + " SP" + sp);
                                 else if (install == "1")
-                                {
-                                    sys.Add(new Members() { Name = name, Id = subKeyName, Path = null });
-                                }
+                                    WriteText("DotNetFramwok Version: " + subKeyName + "\t" + name);
 
                             }
 
@@ -219,14 +204,56 @@ namespace MasterCry
             using (RegistryKey ndpKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey("SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\"))
             {
                 if (ndpKey != null && ndpKey.GetValue("Release") != null)
+                    WriteText("DotNetFramwok Version: " + CheckFor45DotVersion((int)ndpKey.GetValue("Release")));
+                else
+                    WriteText("DotNetFramwok Version: Version 4.5 or later is not detected.");
+            }
+        }
+
+        public static string ReadSetting(string key)
+        {
+            string result = string.Empty;
+            try
+            {
+                var appSettings = ConfigurationManager.AppSettings;
+                result = appSettings[key] ?? "0";
+            }
+            catch (ConfigurationErrorsException)
+            {
+                result = "Error reading app settings";
+            }
+            return result;
+        }
+
+        //Add or Update Application Settings to Config File
+        public static void AddUpdateAppSettings(string key, string value)
+        {
+            try
+            {
+                var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                var settings = configFile.AppSettings.Settings;
+                if (settings[key] == null)
                 {
-                    sys.Add(new Members() { Name = CheckFor45DotVersion((int)ndpKey.GetValue("Release")), Id = "DotNetFramwok Version", Path = null });
+                    settings.Add(key, value);
                 }
                 else
                 {
-                    Console.WriteLine("");
-                    sys.Add(new Members() { Name = "Version 4.5 or later is not detected.", Id = "DotNetFramwok Version", Path = null });
+                    settings[key].Value = value;
                 }
+                configFile.Save(ConfigurationSaveMode.Modified);
+                ConfigurationManager.RefreshSection(configFile.AppSettings.SectionInformation.Name);
+            }
+            catch (ConfigurationErrorsException)
+            {
+                Console.WriteLine("Error writing app settings");
+            }
+        }
+        private static void WriteText(string Text)
+        {
+            using (System.IO.StreamWriter file =
+            new System.IO.StreamWriter(BuildVars.Save_Location, true))
+            {
+                file.WriteLine(Text);
             }
         }
     }
