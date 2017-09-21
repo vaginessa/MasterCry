@@ -36,10 +36,9 @@ namespace MasterCry
         public static string Config_Command_Version = "CommandVersion";
         public static string Registry_AppName = "ApplicationName";
         public static string Registry_Key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-        public static string FTP_SERVER = "ftp://Hostname.com";
-        public static string FTP_USER = "USER";
-        public static string FTP_PASS = "PASS";
-
+        public static string FTP_SERVER = "";
+        public static string FTP_USER = "";
+        public static string FTP_PASS = "";
 
     }
 }

